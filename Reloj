@@ -1,0 +1,120 @@
+package Snake;
+
+/**
+ * Esta clase maneja el número de ciclos que transcurren.
+ *
+ */
+public class Reloj {
+    
+    /**
+    * Número de milisegundos que comprende un ciclo
+    */
+    private float milisegundosPorCiclo;
+	
+    /**
+     * Última ocasión en la que el reloj fue actualizado
+     */
+    private long ultimaActualizacion;
+	
+    /**
+     * Número de ciclos transcurridos
+     */
+    private int ciclosTranscurridos;
+	
+    /**
+     * Cantidad de tiempo para el siguietne ciclo.
+     */
+    private float excesoCiclo;
+	
+    /**
+     * Determina si el reloj está pausado
+     */
+    private boolean pausado;
+	
+    /**
+     * Constructor de la clase; determina la cantidad de ciclos por segundo
+     * @param ciclosPorSegundo Número de ciclos por segundo
+     */
+    public Reloj(float ciclosPorSegundo) {
+        setCiclosPorSegundo(ciclosPorSegundo);
+	reiniciar();
+    }
+	
+    
+	
+    /**
+     * Reinicia los datos del reloj. El número de cilos y el tiempo al próximo ciclo serán
+     * definidos como 0, la última actualización será definida al tiempo actual y la bandera
+     * de pausa será determinada como falsa.
+     */
+    public void reiniciar() {
+        this.ciclosTranscurridos = 0;
+        this.excesoCiclo = 0.0f;
+        this.ultimaActualizacion = getTiempoActual();
+        this.pausado = false;
+    }
+	
+    /**
+     * Actualiza los datos del reloj. El número de ciclos transcurridos y el tiempo al próximo
+     * ciclo serán calculados sólo si el reloj no está pausado.
+     */
+    public void actualizar() {
+        long tiempoActual = getTiempoActual();
+        float aux = (float)(tiempoActual - ultimaActualizacion) + excesoCiclo;
+        if(!pausado) {
+            this.ciclosTranscurridos += (int)Math.floor(aux / milisegundosPorCiclo);
+            this.excesoCiclo = aux % milisegundosPorCiclo;
+        }
+        this.ultimaActualizacion = tiempoActual;
+    }
+	
+    /**
+     * Verifica si el reloj está pausado
+     */
+    public boolean pausado() {
+        return pausado;
+    }
+	
+    /**
+     * Verifica si el ciclo ha terminado. Si es así, el número de ciclos terminados disminuirá
+     * en uno.
+     */
+    public boolean haPasadoCiclo() {
+        if(ciclosTranscurridos > 0) {
+            this.ciclosTranscurridos--;
+            return true;
+        }
+        return false;
+    }
+	
+    /**
+     * 
+     * Verifica si el ciclo ha terminado, a diferencia del método anterior, el número de ciclos
+     * no disminuirá si el número de ciclos transcurridos es mayor a 0.
+     */
+    public boolean verPasadoCiclo() {
+        return (ciclosTranscurridos > 0);
+    }
+	
+    /**
+     * Calcula el tiempo actual en milisegundos usando el reloj de la computadora.
+     */
+    private static final long getTiempoActual() {
+        return (System.nanoTime() / 1000000L);
+    }
+    
+    /**
+     * Determina la cantidad de ciclos por segundo
+     * @param ciclosPorSegundo Ciclos por segundo
+     */
+    public void setCiclosPorSegundo(float ciclosPorSegundo) {
+        this.milisegundosPorCiclo = (1 / ciclosPorSegundo) * 1000;
+    }
+    
+    /**
+     * Pausa o continua el reloj,
+     */
+    public void setPausa(boolean pausado) {
+        this.pausado = pausado;
+    }
+}
