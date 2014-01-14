@@ -1,0 +1,7 @@
+package Snake;
+
+/**
+ * Guarda las direcciones hacia las cuales se puede mover la serpiente
+ *
+ */
+public enum Direcciones {arriba, derecha, abajo, izquierda}
