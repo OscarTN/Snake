@@ -1,0 +1,248 @@
+package Snake;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Point;
+import javax.swing.JPanel;
+
+/**
+ * Maneja y proyecta el contenido de la pantalla principal del juego
+ */
+public class Pantalla extends JPanel {
+	
+    /**
+     * Número de columnas de la pantalla. Debe ser impar para que se pueda declarar un centro
+     */
+    public static final int columnas = 25;
+
+    /**
+     * Número de filas de la pantalla. Debe ser impar para que se pueda declarar un centro.
+     */
+    public static final int filas = 25;
+	
+    /**
+     * Tamaño de cada cuadro.
+     */
+    public static final int tamañoCuadro = 20;
+	
+    /**
+     * Se define la posición de los ojos respecto a los límites del cuadro de la "cabeza" de la serpiente
+     */
+    private static final int ojosX = tamañoCuadro / 3;
+    private static final int ojosY = tamañoCuadro / 6;
+    private static final int ojosTamaño = tamañoCuadro / 2;
+    
+    /**
+     * Se define la fuente.
+     */
+    private static final Font fuente = new Font("Tahoma", Font.BOLD, 25);
+    
+    /**
+     * Se declara la lista de cuadros que aparecen en pantalla
+     */
+    private TipoCuadro[] cuadros;
+    
+    /**
+     * Iniciando un objeto de la clase Snake
+     */
+    private Snake juego;
+    		
+    /**
+     * Constructor de la clase Pantalla
+     * @param juego
+     */
+    public Pantalla(Snake juego) {
+        this.juego = juego;
+	this.cuadros = new TipoCuadro[filas * columnas];
+	setPreferredSize(new Dimension(columnas * tamañoCuadro, filas * tamañoCuadro));
+	setBackground(Color.BLACK);
+    }
+	
+    /**
+     * Limpia los cuadros de la pantalla y cambia su valor a null.
+     */
+    public void limpiarPantalla() {
+        for(int i = 0; i < cuadros.length; i++) {
+            cuadros[i] = null;
+	}
+    }
+	
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+	/*
+         * Analiza cada cuadro y lo dibuja si no es null
+	 */
+	for(int x = 0; x < columnas; x++) {
+            for(int y = 0; y < filas; y++) {
+                TipoCuadro tipo = getCuadro(x, y);
+                if(tipo != null) {
+                    dibujarCuadro(x * tamañoCuadro, y * tamañoCuadro, tipo, g);
+		}
+            }
+        }
+	
+	/*
+         * Dibuja la cuadrícula en la pantalla. Se colocó para ver más facilmente la posición de la vibora
+         * respecto a la manzana.
+         * 
+         * El panel es un pixel demasiado pequeño para dibujar el lado derecho de la pantalla, por lo que
+         * se dibuja por separado con un rectángulo.
+	 */
+	g.setColor(Color.DARK_GRAY);
+	g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
+	for(int x = 0; x < columnas; x++) {
+            for(int y = 0; y < filas; y++) {
+                g.drawLine(x * tamañoCuadro, 0, x * tamañoCuadro, getHeight());
+		g.drawLine(0, y * tamañoCuadro, getWidth(), y * tamañoCuadro);
+            }
+	}		
+        
+	/*
+         * Muestra un mensaje en pantalla de acuerdo al estado actual del juego.
+	 */
+	if(juego.juegoTerminado() || juego.juegoNuevo() || juego.juegoPausado() || juego.juegoAutomatico()) {
+            g.setColor(Color.WHITE);
+	
+            /*
+             * Obtiene las coordenadas centrales del juego.
+             */
+            int centroX = getWidth() / 2;
+            int centroY = getHeight() / 2;
+			
+            /*
+             * Determina el mensaje de acuerdo al estado del juego
+             */
+            String mensajeGrande = null;
+            String mensajePequeño = null;
+            if(juego.juegoNuevo()) {
+                mensajeGrande = "Snake!";
+		mensajePequeño = "Presiona Enter para iniciar";
+            } else if(juego.juegoTerminado()) {
+		mensajeGrande = "Juego terminado";
+		mensajePequeño = "Presiona Enter para reiniciar";
+            } else if(juego.juegoPausado()) {
+		mensajeGrande = "Pausa";
+		mensajePequeño = "Presiona P para continuar";
+            }else if(juego.juegoAutomatico()){
+                mensajeGrande = "Automático";
+                mensajePequeño = "Presiona O para continuar";
+            }
+			
+            /*
+             * Muestra el mensaje en el centro de la pantalla
+             */
+            g.setFont(fuente);
+            g.drawString(mensajeGrande, centroX - g.getFontMetrics().stringWidth(mensajeGrande) / 2, centroY - 50);
+            g.drawString(mensajePequeño, centroX - g.getFontMetrics().stringWidth(mensajePequeño) / 2, centroY + 50);
+        }
+    }
+	
+    /**
+     * Dibuja un cuadro en la pantalla
+     * @param x Coordenada X del cuadro [en pixeles]
+     * @param y Coordenada Y del cuadro [en pixeles].
+     * @param tipo Tipo de cuadro a dibujar
+     * @param g El objeto Graphics en el que se dibuja
+     */
+    private void dibujarCuadro(int x, int y, TipoCuadro tipo, Graphics g) {
+        /*
+         * Se dibuja el cuadro de acuerdo al tipo que se especifique.
+	 */
+        switch(tipo) {
+	
+            /*
+             * Se dibuja una "fruta", mostrada como un circulo de color rojo, un poco más pequeña que el cuadro
+             * en sí.
+             */
+            case fruta:
+                g.setColor(Color.RED);
+		g.fillOval(x + 2, y + 2, tamañoCuadro - 4, tamañoCuadro - 4);
+		break;
+			
+            /*
+             * Cada cuadro del "cuerpo" de la serpiente es un cuadro verde que cubre completamente la casilla
+             */
+            case cuerpo:
+                g.setColor(Color.GREEN);
+		g.fillRect(x, y, tamañoCuadro, tamañoCuadro);
+		break;
+			
+            /*
+             * La "cabeza" de la serpiente, se dibuja de forma similar al cuerpo; pero se le agregaron dos
+             * líneas que simulan los "ojos" de la serpiente [utilizados para indicar la dirección]
+             */
+            case cabeza:
+                g.setColor(Color.GREEN);
+		g.fillRect(x, y, tamañoCuadro, tamañoCuadro);
+		
+		//Se define el color como negro para poder dibujar los ojos.
+                g.setColor(Color.BLACK);
+		
+                /*
+                 * En el siguiente Switch se maneja la posición que tendrán los ojos. Líneas verticales
+                 * indican que la serpiente se mueve hacia arriba  abajo, líneas horizontales indican que
+                 * se mueve a la izquierda o a la derecha.
+                 */
+		switch(juego.getDireccion()) {
+                    case arriba: {
+                        int baseY = y + ojosY;
+                        g.drawLine(x + ojosX, baseY, x + ojosX, baseY + ojosTamaño);
+			g.drawLine(x + tamañoCuadro - ojosX, baseY, x + tamañoCuadro - ojosX, baseY + ojosTamaño);
+			break;
+                    }
+                    case abajo: {
+                        int baseY = y + tamañoCuadro - ojosY;
+			g.drawLine(x + ojosX, baseY, x + ojosX, baseY - ojosTamaño);
+			g.drawLine(x + tamañoCuadro - ojosX, baseY, x + tamañoCuadro - ojosX, baseY - ojosTamaño);
+			break;
+                    }
+                    case izquierda: {
+                        int baseX = x + ojosY;
+			g.drawLine(baseX, y + ojosX, baseX + ojosTamaño, y + ojosX);
+			g.drawLine(baseX, y + tamañoCuadro - ojosX, baseX + ojosTamaño, y + tamañoCuadro - ojosX);
+			break;
+                    }
+                    case derecha: {
+                        int baseX = x + tamañoCuadro - ojosY;
+			g.drawLine(baseX, y + ojosX, baseX - ojosTamaño, y + ojosX);
+			g.drawLine(baseX, y + tamañoCuadro - ojosX, baseX - ojosTamaño, y + tamañoCuadro - ojosX);
+			break;
+                    }
+			
+		}
+		break;
+	}
+    }
+    
+    /**
+     * Coloca un cuadro en las coordenadas deseadas. Aprovechando la clase Point.
+     * @param point Las coordenada del cuadro.
+     * @param tipo Tipo del cuadro.
+     */
+    public void setCuadro(Point point, TipoCuadro tipo) {
+        setCuadro(point.x, point.y, tipo);
+    }
+	
+    /**
+     * Coloca un cuadro en las coordenadas deseadas.
+     * @param x Coordenada X del cuadro.
+     * @param y Coordenada Y del cuadro
+     * @param tipo Tipo de cuadro
+     */
+    public void setCuadro(int x, int y, TipoCuadro tipo) {
+        cuadros[y * filas + x] = tipo;
+    }
+	
+    /**
+     * Obtiene el cuadro de la coordenada deseada
+     * @param x Coordenada X del cuadro.
+     * @param y Coordenada Y del cuadro
+     * @return
+     */
+    public TipoCuadro getCuadro(int x, int y) {
+        return cuadros[y * filas + x];
+    }
+}
