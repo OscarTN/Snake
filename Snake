@@ -1,0 +1,467 @@
+package Snake;
+
+import java.awt.BorderLayout;
+import java.awt.Point;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.LinkedList;
+import java.util.Random;
+
+import javax.swing.JFrame;
+
+public class Snake extends JFrame {
+		
+    /**
+     * Longitud mínima de la serpiente. Se colocó 5 para no ser sólo una cabeza flotante 
+     * en el inicio
+     */
+    private static final int longitudMinima = 5;
+	
+    /**
+     * Creando los objetos
+     */
+    private Pantalla pantalla;
+    private Panel panel;
+    private Reloj temporizador;
+	
+    /**
+     * Números aleatorios. Usado para la posición de la fruta.
+     */
+    private Random aleatorio;
+    
+    /*
+     * Banderas a utilizar para determinar el estado del juego
+     */
+    private boolean juegoNuevo;
+    private boolean juegoTerminado;
+    private boolean juegoPausado;
+    private boolean juegoAutomatico;
+    	
+    /**
+     * Lista que contiene los puntos para la serpiente
+     */
+    private LinkedList<Point> snake;
+	
+    /**
+     * Lista que contiene las direcciones
+     */
+    private LinkedList<Direcciones> direcciones;
+        
+    /*
+     * Posición de la fruta actual, usado para el modo automático
+     */
+    private Point posicionFruta, posicionCabeza;
+	
+    /**
+     * Puntuación actual
+     */
+    private int puntuacion;
+	
+    /**
+     * Número de frutas que se han atrapado
+     */
+    private int frutasComidas;
+	
+    /**
+     * Número de puntos para la fruta actual
+     */
+    private int puntuacionFruta;
+	
+    /**
+     * Constructor de la clase Snake. Crea la ventana e inicia los controles
+     */
+    public Snake() {
+        super("Snake");
+	setLayout(new BorderLayout());
+	setDefaultCloseOperation(EXIT_ON_CLOSE);
+	setResizable(false);
+				
+	/*
+	 * Se agregan las dos pantallas que conforman el juego
+	 */
+	this.pantalla = new Pantalla(this);
+	this.panel = new Panel(this);
+	add(pantalla, BorderLayout.CENTER);
+	add(panel, BorderLayout.EAST);
+	
+	/*
+         * Se agrega un listener, con el que se manejan los controles
+	 */
+	addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                switch(e.getKeyCode()) {
+                    /*
+                     * Si el juego no está pausado ni ha terminado, verifica cuál es la dirección
+                     * que tiene la serpiente, y si es posible realizar el movimiento realizado [ejemplo,
+                     * no realiza acción alguna si se presiona las flechas arriba o abajo si la serpiente
+                     * ya lleva esa dirección]
+                     */
+                    case KeyEvent.VK_W:
+                    case KeyEvent.VK_UP:
+                        if(!juegoPausado && !juegoTerminado) {
+                            Direcciones last = direcciones.peekLast();
+                                if(last != Direcciones.abajo && last != Direcciones.arriba) {
+                                    direcciones.addLast(Direcciones.arriba);
+				}
+			}
+			break;
+                    case KeyEvent.VK_S:
+                    case KeyEvent.VK_DOWN:
+                        if(!juegoPausado && !juegoTerminado) {
+			Direcciones last = direcciones.peekLast();
+                            if(last != Direcciones.arriba && last != Direcciones.abajo) {
+                                direcciones.addLast(Direcciones.abajo);
+                            }
+                        }
+			break;
+                    case KeyEvent.VK_A:
+                    case KeyEvent.VK_LEFT:
+                        if(!juegoPausado && !juegoTerminado) {
+                            Direcciones last = direcciones.peekLast();
+                            if(last != Direcciones.derecha && last != Direcciones.izquierda) {
+                                direcciones.addLast(Direcciones.izquierda);
+                            }
+			}
+			break;
+                    case KeyEvent.VK_D:
+                    case KeyEvent.VK_RIGHT:
+                        if(!juegoPausado && !juegoTerminado) {
+			Direcciones last = direcciones.peekLast();
+			if(last != Direcciones.izquierda && last != Direcciones.derecha) {
+                            direcciones.addLast(Direcciones.derecha);
+			}
+                    }
+                    break;
+			
+                    /*
+                     * Si el juego no ha terminado, pausa o retira la pausa del juego
+                     */
+                    case KeyEvent.VK_P:
+                        if(!juegoTerminado) {
+                            juegoPausado = !juegoPausado;
+                            temporizador.setPausa(juegoPausado);
+			}
+                    break;
+				
+                    /*
+                     * Inicia o reinicia el juego si actualmente no está en ejecución
+                     */
+                    case KeyEvent.VK_ENTER:
+                        if(juegoNuevo || juegoTerminado) {
+                            reiniciarJuego();
+			}
+                    break;
+                    case KeyEvent.VK_O:
+                        if(!juegoTerminado && !juegoPausado){
+                            juegoAutomatico=!juegoAutomatico;
+                            automatico();
+                        }
+                    break;
+                                    
+                }
+            }
+			
+	});
+		
+	/*
+         * Se otorga el tamaño apropiado, se centra en la pantalla de la computadora y se muestra.
+         */
+	pack();
+	setLocationRelativeTo(null);
+	setVisible(true);
+    }
+	
+    /**
+     * Inicia el juego
+     */
+    void iniciarJuego() {
+        /*
+         * Inicializa todo lo que se va a ocupar
+	 */
+	this.aleatorio = new Random();
+	this.snake = new LinkedList<>();
+	this.direcciones = new LinkedList<>();
+	this.temporizador = new Reloj(10);
+	this.juegoNuevo = true;
+	temporizador.setPausa(true);
+
+        /*
+         * Se inicia el juego; la condición inicial asegura que el juego siga corriendo hasta que se 
+         * cierre la ventana.
+	 */
+	while(true) {
+            //Se actualiza el temporizador
+            temporizador.actualizar();
+		
+            /*
+             * Si ha transcurrido un ciclo en el temporizador, se actualiza el juego
+             */
+            if(juegoAutomatico && !juegoTerminado){
+                automatico();
+            }
+            if(temporizador.haPasadoCiclo()) {
+                actualizarJuego();
+            }
+		
+            //Vuelve a dibujar la pantalla y el panel con el nuevo contenido
+            pantalla.repaint();
+            panel.repaint();
+			
+        }
+    }
+    
+    /**
+     * Reinicia el contenido del juego a sus valores iniciales e inicia un nuevo juego
+     */
+    private void reiniciarJuego() {
+        this.puntuacion = 0;
+        this.frutasComidas = 0;
+        this.juegoNuevo = false;
+        this.juegoTerminado = false;
+        this.juegoAutomatico = false;
+		
+        Point cabeza = new Point(Pantalla.columnas / 2, Pantalla.filas / 2);
+        snake.clear();
+        snake.add(cabeza);
+        pantalla.limpiarPantalla();
+        pantalla.setCuadro(cabeza, TipoCuadro.cabeza);
+	
+        direcciones.clear();
+        direcciones.add(Direcciones.arriba);
+
+        temporizador.reiniciar();
+        crearFruta();
+    }
+	
+    /**
+     * Actualiza la información del juego
+     */
+    private void actualizarJuego() {
+        /*
+         * Detecta el tipo de cuadro con el cual colisiona la cabeza.
+         * 
+         * Fruta: se incrementa el contador de frutas que se han comido, se suma la puntuación de la fruta
+         * a la puntuación total y se crea una nueva fruta.
+         * 
+         * Cuerpo/pared: Se manejan estas colisiones de la misma forma, pues ambas ocasionan lo mismo [el fin
+         * del juego]
+         * 
+         * Si no ocurre colision alguna, se disminuye la puntuación que dará la próxima fruta. Se agregó esto
+         * para hacer el juego un poco más interesante.
+	 */
+        TipoCuadro colision = actualizarSerpiente();
+	if(colision == TipoCuadro.fruta) {
+            frutasComidas++;
+            puntuacion += puntuacionFruta;
+            crearFruta();
+	}else if(colision == TipoCuadro.cuerpo) {
+            juegoTerminado = true;
+            temporizador.setPausa(true);
+	}else if(puntuacionFruta > 10) {
+            puntuacionFruta--;
+	}
+    }
+	
+    /**
+     * Se actualiza la posición y tamaño de la serpiente
+     * @return Tile tile that the cabeza moved into.
+     */
+    private TipoCuadro actualizarSerpiente() {
+        /*
+         * Se verifica cuál será la próxima dirección, y se cambia la posición de la cabeza de acuerdo a esta
+	 */
+        Direcciones direccion = direcciones.peekFirst();
+	Point cabeza = new Point(snake.peekFirst());
+	switch(direccion) {
+            case arriba:
+                cabeza.y--;
+		break;
+            case abajo:
+                cabeza.y++;
+		break;
+            case izquierda:
+                cabeza.x--;
+		break;
+            case derecha:
+                cabeza.x++;
+		break;
+	}
+		
+	/*
+         * Se verifica que la serpiente no choque contra la "pared", si lo hace se regresa un cuadro de tipo
+         * "cuerpo", pues a fin de cuentas ambos [tanto "cuerpo" como "pared"] causan el fin del juego.
+	 */
+        if(cabeza.x < 0 || cabeza.x >= Pantalla.columnas || cabeza.y < 0 || cabeza.y >= Pantalla.filas) {
+            return TipoCuadro.cuerpo;
+	}
+		
+        /*
+         * Se verifica el cuadro que está en la nueva posición de la cabeza y se quita el último cuadro
+         * de la cola
+         * Se verifica nuevamente el cuadro que está en la posición de la cabeza, una vez que se ha quitado
+         * la cola. Si esto no se realiza, se obtiene un falso "juego terminado" si la cabeza se encuentra
+         * en la posición de la cual se acaba de remover la cola
+	 */
+	TipoCuadro aux = pantalla.getCuadro(cabeza.x, cabeza.y);
+	if(aux != TipoCuadro.fruta && snake.size() > longitudMinima) {
+            Point cola = snake.removeLast();
+            pantalla.setCuadro(cola, null);
+            aux = pantalla.getCuadro(cabeza.x, cabeza.y);
+	}
+		
+	/*
+         * Se actualiza la posición de la serpiente si no existe colisión.
+	 * 1. La última posición de la cabeza se rellena con un cuadro de tipo "cuerpo"
+         * 2. Se agrega la nueva cabeza a la serpiente
+         * 3. Se define la nueva posición cabeza a un cuadro de tipo "cabeza"
+	 * 
+	 * Se elimina la dirección de la lista de direcciónes, preparandose para aceptar una nueva
+         * dirección.
+	 */
+        if(aux != TipoCuadro.cuerpo) {
+            pantalla.setCuadro(snake.peekFirst(), TipoCuadro.cuerpo);
+            snake.push(cabeza);
+            pantalla.setCuadro(cabeza, TipoCuadro.cabeza);
+            if(direcciones.size() > 1) {
+                direcciones.poll();
+            }
+	}
+	this.posicionCabeza=new Point(cabeza.x,cabeza.y);
+	return aux;
+    }
+    
+    /**
+     * Crea una nueva fruta en la pantalla
+     */
+    private void crearFruta() {
+        this.puntuacionFruta = 100;
+
+	/*
+         * Obtiene un índice aleatorio, dependiendo de la cantidad de espacios libres en pantalla
+         * En base a este índice se verifica cada espacio hasta que se llega al espacio libre
+         * que corresponde al índice obtenido
+         */
+        int indice = aleatorio.nextInt(Pantalla.columnas * Pantalla.filas - snake.size());
+	int espacioLibre = -1;
+	for(int x = 0; x < Pantalla.columnas; x++) {
+            for(int y = 0; y < Pantalla.filas; y++) {
+                TipoCuadro tipo = pantalla.getCuadro(x, y);
+                    if(tipo == null) {
+                        if(++espacioLibre == indice) {
+                            pantalla.setCuadro(x, y, TipoCuadro.fruta);
+                            posicionFruta=new Point(x,y);
+                            break;
+                        }
+                    }
+            }
+	}
+    }
+        
+    /*
+     * Le otorga a la serpiente la capacidad de efectuar un movimiento automático; sin depender de la entrada de 
+     * datos por parte del usuario.
+     * 
+     * Su funcionamiento es relativamente sencillo. Se obtienen las coordenadas [X] y [Y] de la fruta actual, y se
+     * realiza lo mismo para la cabeza, una vez que se comparan ambos pares de coordenadas, se intenta igualar ambos,
+     * iniciando con las [x] y siguiendo con las [y].
+     */
+    private void automatico(){
+        if(posicionFruta.x==posicionCabeza.x){
+            if(posicionFruta.y==posicionCabeza.y){
+            
+            }else if(posicionFruta.y>posicionCabeza.y){
+                Direcciones last = direcciones.peekLast();
+                if(last != Direcciones.arriba && last != Direcciones.abajo) {
+                    direcciones.addLast(Direcciones.abajo);
+                }
+            }else if(posicionFruta.y<posicionCabeza.y){
+                Direcciones last = direcciones.peekLast();
+                if(last != Direcciones.abajo && last != Direcciones.arriba) {
+                    direcciones.addLast(Direcciones.arriba);
+                }
+            }
+        }else if(posicionFruta.x>posicionCabeza.x){
+            Direcciones last = direcciones.peekLast();
+            if(last != Direcciones.izquierda && last != Direcciones.derecha) {
+                direcciones.addLast(Direcciones.derecha);
+            }
+        }else if(posicionFruta.x<posicionCabeza.x){
+            Direcciones last = direcciones.peekLast();
+            if(last != Direcciones.derecha && last != Direcciones.izquierda) {
+                direcciones.addLast(Direcciones.izquierda);
+            }
+        }
+    }
+        
+    /**
+     * Detecta si se está jugando un nuevo juego
+     */
+    public boolean juegoNuevo() {
+        return juegoNuevo;
+    }
+	
+    /**
+     * Detecta si el juego ha terminado
+     */
+    public boolean juegoTerminado() {
+        return juegoTerminado;
+    }
+	
+    /**
+     * Detecta si el juego está pausado
+     */
+    public boolean juegoPausado() {
+        return juegoPausado;
+    }
+        
+    public boolean juegoAutomatico(){
+        return juegoAutomatico;
+    }
+        
+    public void setJuegoAutomatico(boolean juegoAutomatico){
+        this.juegoAutomatico=juegoAutomatico;
+    }
+	
+    /**
+     * Regresa la puntuación actual
+     * @return Puntuación
+     */
+    public int getPuntuacion() {
+        return puntuacion;
+    }
+	
+    /**
+     * Regresa el número de frutas comidas
+     * @return Frutas comidas
+     */
+    public int getFrutasComidas() {
+        return frutasComidas;
+    }
+	
+    /**
+     * Regresa la puntuación de la proxima fruta
+     * @return Puntuación de la próxima fruta
+     */
+    public int getPuntuacionFruta() {
+        return puntuacionFruta;
+    }
+	
+    /**
+     * Regresa la dirección actual de la serpiente
+     * @return Direcci´´on actual
+     */
+    public Direcciones getDireccion() {
+        return direcciones.peek();
+    }
+	
+    /**
+     * Inicia el programa
+     * @param args Unused.
+     */
+    public static void main(String[] args) {
+        Snake snake = new Snake();
+	snake.iniciarJuego();
+    }
+
+}
