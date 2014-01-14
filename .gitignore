@@ -1,0 +1,85 @@
+package Snake;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import javax.swing.JPanel;
+
+/**
+ * Muestra las estadísticas y los controles al jugador.
+ */
+public class Panel extends JPanel {
+	
+	
+	/**
+	 * Se definen los diferentes tipos de tamaño con los que se trabajará la fuente.
+	 */
+	private static final Font fuenteGrande = new Font("Tahoma", Font.BOLD, 20);
+	private static final Font fuenteMediana = new Font("Tahoma", Font.BOLD, 16);
+        private static final Font fuentePequeña = new Font("Tahoma", Font.BOLD, 12);
+	
+	/**
+	 * Un objeto de la clase Snake
+	 */
+	private Snake juego;
+	
+	/**
+	 * Constructor de la clase panel
+	 * @param juego 
+	 */
+	public Panel(Snake juego) {
+            this.juego = juego;
+            setPreferredSize(new Dimension(300, Pantalla.filas * Pantalla.tamañoCuadro));
+            setBackground(Color.BLACK);
+	}
+	
+	private static final int posYEstadisticas = 150;
+	private static final int posYControles = 320;
+	private static final int separacion = 25;
+	private static final int posXFuenteGrande = 30;
+	private static final int posXFuentePequeña = 50;
+	
+	@Override
+	public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            
+            /*
+             * Pinta las letras con el color indicado
+             */
+            g.setColor(Color.WHITE);
+		
+            /*
+             * Dibuja el nombre del juego en la ventana
+             */
+            g.setFont(fuenteGrande);
+            g.drawString("Snake", getWidth() / 2 - g.getFontMetrics().stringWidth("Snake") / 2, 50);
+		
+            /*
+             * Dibuja las etiquetas en la pantalla
+             */
+            g.setFont(fuenteMediana);
+            g.drawString("Estadísticas", posXFuenteGrande, posYEstadisticas);
+            g.drawString("Controles", posXFuenteGrande, posYControles);
+				
+            /*
+             * Dibuja la categoría "Contenido".
+             */
+            g.setFont(fuentePequeña);
+            int dibujarY = posYEstadisticas;
+            g.drawString("Puntuación total: " + juego.getPuntuacion(), posXFuentePequeña, dibujarY += separacion);
+            g.drawString("Frutas comidas: " + juego.getFrutasComidas(), posXFuentePequeña, dibujarY += separacion);
+            g.drawString("Puntuación de la fruta: " + juego.getPuntuacionFruta(), posXFuentePequeña, dibujarY += separacion);
+		
+            /*
+             * Dibuja la categoría "Controles"
+             */
+            dibujarY = posYControles;
+            g.drawString("Arriba: W / Flecha arriba", posXFuentePequeña, dibujarY += separacion);
+            g.drawString("Abajo: S / Flecha abajo", posXFuentePequeña, dibujarY += separacion);
+            g.drawString("Izquierda: A / Flecha izquierda", posXFuentePequeña, dibujarY += separacion);
+            g.drawString("Derecha: D / Flecha Derecha", posXFuentePequeña, dibujarY += separacion);
+            g.drawString("Pausar juego: P", posXFuentePequeña, dibujarY += separacion);
+            g.drawString("Juego Automático: O", posXFuentePequeña, dibujarY += separacion);
+	}
+}
