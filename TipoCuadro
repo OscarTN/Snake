@@ -1,0 +1,6 @@
+package Snake;
+
+/**
+ * Guarda los tipos de cuadro que existen en el juego
+ */
+public enum TipoCuadro {fruta, cabeza, cuerpo}
